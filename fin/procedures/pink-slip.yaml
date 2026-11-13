@@ -1,0 +1,162 @@
+---
+id: 2209058
+positive_triggers:
+- I need my pink slip
+- Can you send me my proof of insurance?
+- I need a copy of my pink slip emailed to me
+- Can you mail me my pink slip?
+- I lost my pink slip, can you send another one?
+- I need proof of insurance for my car
+- Please send my pink slip by email and by mail
+- I'd like my insurance pink slip sent over
+negative_triggers:
+- I want to update my email address
+- I need to change my mailing address
+- I want to cancel my policy
+- How much is my premium?
+- I want to make a claim
+- I want to add a driver to my policy
+- I want to speak to a broker about a new quote
+- When is my next payment due?
+trigger_description: The caller wants their pink slip (proof of insurance) sent to
+  them, by email, by mail, or both.
+targeting:
+  channels:
+  - phone_call
+agentic_switch: false
+procedure:
+  main:
+  - if: There is NO successful Onlia Verify Code result earlier in this conversation
+      (a successful result has isSuccess true, empty errors and isVerified true)
+    then:
+      run: Verify Caller
+  - <use action="Onlia Find Active Policy" /> using the verified customerId from the
+    successful Onlia Verify Code result as contactId. It returns policyId, policyNumber,
+    policyType and mailingAddress, but no email.
+  - if: The Onlia Find Active Policy call failed or did not return an active policy
+    then: Tell the caller in short sentences that no active policy was found. Offer
+      to arrange a callback from a broker. <end />
+  - Ask the caller whether they want the pink slip sent by email, by mail, or both.
+  - |-
+    If the caller wants it by email: read back the email address the caller confirmed for verification earlier in this call (<read attr="temporary.verified_email" type="attribute" />, or, if that is empty, the email they gave to Onlia Send Verification Code earlier in this conversation). If you do not have it, ask the caller which email to send it to. Read it back naturally. Do not use any email from the policy record. Ask if that is correct and get an explicit yes.
+    If the caller wants it by mail: read back the mailingAddress from the Onlia Find Active Policy result slowly, in short pieces. Ask if that is correct and get an explicit yes.
+    If the caller says the email or mailing address is wrong or they have a new one: ask for the new email, or the new street address, city, state and postal code, one at a time. Read it back (read an email back naturally; read postal codes in short groups) and get an explicit yes. Then <use action="Onlia Update Contact" /> with verifiedContactID set to the verified customerId and ONLY the changed fields (newEmailAddress, or newStreetAddress, newCity, newState and newPostalCode). If the update succeeds, tell the caller their record is updated and use the new confirmed email or address as the destination for this pink slip. If the update fails, tell the caller their record could not be updated and ask whether they still want the pink slip sent to the new destination they confirmed; continue only with an explicit yes.
+  - if: The caller wants the pink slip by email AND gave an explicit yes to the email
+      read-back
+    then:
+    - <use action="Onlia Find Latest Case" /> with contactId set to the customerId
+      from the successful Onlia Verify Code result. Do not mention it to the caller.
+    - '<use action="Onlia Update Case" /> with caseId set to the case found by Onlia
+      Find Latest Case, contactId set to the verified customerId, newSubject set to
+      a short subject under 50 characters (for example "Pink slip sent - caller verified"),
+      and newDescription set to 3 to 5 sentences for the broker: the caller verified
+      by email code, which policy was found, how and where the pink slip is being
+      sent (email and/or mail, and the confirmed destination), and anything else the
+      caller asked about. Do not mention it to the caller.'
+    - <use action="Onlia Send Pink Slip Email" /> once only, with policyId from Onlia
+      Find Active Policy, contactId set to the verified customerId, and confirmedEmail
+      set to the email address the caller explicitly confirmed. Relay the confirmationMessage
+      to the caller. If isSuccess is false or errors is non-empty, tell the caller
+      it failed and do not say it was sent. Do NOT ask whether they need anything
+      else yet.
+  - if: The caller wants the pink slip by mail AND gave an explicit yes to the mailing
+      address read-back
+    then:
+    - <use action="Onlia Find Latest Case" /> with contactId set to the customerId
+      from the successful Onlia Verify Code result. Do not mention it to the caller.
+    - '<use action="Onlia Update Case" /> with caseId set to the case found by Onlia
+      Find Latest Case, contactId set to the verified customerId, newSubject set to
+      a short subject under 50 characters (for example "Pink slip sent - caller verified"),
+      and newDescription set to 3 to 5 sentences for the broker: the caller verified
+      by email code, which policy was found, how and where the pink slip is being
+      sent (email and/or mail, and the confirmed destination), and anything else the
+      caller asked about. Do not mention it to the caller.'
+    - <use action="Onlia Send Pink Slip Mail" /> once only, with policyId from Onlia
+      Find Active Policy, contactId set to the verified customerId, and confirmedMailingAddress
+      set to the mailing address the caller confirmed. Relay the confirmationMessage
+      to the caller. If isSuccess is false or errors is non-empty, tell the caller
+      it failed and do not say it was sent. Do NOT ask whether they need anything
+      else yet.
+  - Ask the caller if they need anything else.
+  - if: The caller asks to speak to a broker, a licensed agent, a person or a human,
+      or confirms they want to be connected to one, or asks for something only a broker
+      can do (a coverage change or upgrade, pricing, finalizing a quote, billing help,
+      or a pricing or billing exception)
+    then:
+      run: Broker Handoff
+  Verify Caller:
+  - Tell the caller they need to verify their identity first. Ask for the email address
+    on file. Read it back naturally, and get an explicit yes. Once confirmed, remember
+    it as <write attr="temporary.verified_email" />.
+  - '<use action="Onlia Send Verification Code" /> with customerToVerify set to the
+    confirmed email <read attr="temporary.verified_email" type="attribute" />. Then
+    say: "If that email is on file, you''ll get a code shortly." Never reveal whether
+    an account exists. Keep authenticationKey, customerId and customerType from this
+    result internally and never say them aloud.'
+  - Ask the caller for the code from the email and read the digits back to confirm.
+    Then <use action="Onlia Verify Code" /> with customerCode set to the code the
+    caller gave, and authenticationKey, customerId and customerType taken from the
+    latest Onlia Send Verification Code result. The caller is verified only when isSuccess
+    is true, errors is empty and isVerified is true.
+  - if: The caller is NOT verified by the latest Onlia Verify Code result
+    then: 'Tell the caller the code did not match and let them try again, up to three
+      codes in total. If they still are not verified, offer to send one new code:
+      <use action="Onlia Send Verification Code" /> again with the same email, ask
+      for the new code, and <use action="Onlia Verify Code" /> with the authenticationKey,
+      customerId and customerType from that newest send. If they are still not verified,
+      tell them you can''t send a pink slip on this call, that they''re welcome to
+      call back, thank them and <end behavior="end_phone_call" />.'
+  Broker Handoff:
+  - if: There is NO successful Onlia Verify Code result in this conversation (a successful
+      result has isSuccess true, empty errors and isVerified true)
+    then:
+      run: Verify Caller
+  - <use action="Onlia Find Latest Case" /> with contactId set to the customerId from
+    the successful Onlia Verify Code result in this conversation.
+  - if: Onlia Find Latest Case found a case for the caller
+    then: '<use action="Onlia Update Case" /> with caseId set to the case found by
+      Onlia Find Latest Case, contactId set to the verified customerId, newSubject
+      set to a short subject under 50 characters describing why the caller called,
+      and newDescription set to 3 to 5 sentences summarising the call for the broker:
+      what the caller asked for, what was already done on this call (for example verification,
+      policy lookup, pink slip sent, contact details updated) and what they now need
+      from the broker. Do not create a new case.'
+    else: '<use action="Onlia Update Or Create Case" /> with contactId set to the
+      verified customerId, newSubject set to a short subject under 50 characters describing
+      why the caller called, and newDescription set to 3 to 5 sentences summarising
+      the call for the broker: what the caller asked for, what was already done on
+      this call (for example verification, policy lookup, pink slip sent, contact
+      details updated) and what they now need from the broker.'
+  - 'Only after the case step above has run, say ONE short line in your own words,
+    for example: "That''s not something I''m able to handle, but I''ll pass you to
+    someone on our licensed team who can help." <handoff id="handoff-1" />'
+name: Onlia - Pink Slip
+state: live
+inline_tool_definitions:
+  handoff-1:
+    type: handoff
+    in_office_hours:
+      type: end_call
+      data:
+        handover_message: You'll be passed over to a licensed broker now.
+    out_of_office_hours:
+      type: end_call
+      data:
+        handover_message: You'll be passed over to a licensed broker now.
+temporary_attributes:
+  verified_email:
+    type: string
+    description: The email address the caller confirmed during verification in this
+      call.
+guidance: This is a phone call. Use short, spoken sentences. Never ask the caller
+  for an ID. Never send the pink slip to an email or address the caller has not explicitly
+  confirmed with a clear yes. Each send connector is called at most once and never
+  twice. Never claim a pink slip was sent unless the connector reported success. If
+  the caller is already verified in this call, do not ask for their email or send
+  a new code.
+categories:
+- tone
+- routing
+voice_settings:
+  data_connector_mocks:
+version: 46533928

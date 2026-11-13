@@ -1,0 +1,148 @@
+---
+id: 2209051
+positive_triggers:
+- I'm calling about my commercial auto quote
+- What's the status of my insurance quote?
+- I requested a quote for my company vehicles, where does it stand?
+- Can you check on my commercial auto quote?
+- I want to know if my quote is ready
+- Is my quote still valid?
+- I got a quote last week and want an update
+- Where are we with my commercial truck insurance quote?
+negative_triggers:
+- I want to file a claim for an accident
+- I need to cancel my policy
+- I want to change my billing address
+- Can I get a certificate of insurance?
+- I'd like to make a payment on my invoice
+- I want to start a brand new quote for a new vehicle
+- How do I add a driver to my existing policy?
+- I have a complaint about a broker
+trigger_description: The caller asks about the status of their commercial-auto insurance
+  quote.
+targeting:
+  channels:
+  - phone_call
+agentic_switch: false
+procedure:
+  main:
+  - if: There is NO successful Onlia Verify Code result earlier in this conversation
+      (a successful result has isSuccess true, empty errors and isVerified true)
+    then:
+      run: Verify Caller
+  - <use action="Onlia Find Quote" /> using the contactId (the customerId from the
+    successful "Onlia Verify Code" result). The lookup returns quoteId, quoteNumber,
+    status and expirationDate. Treat the result as not found if isSuccess is false
+    or errors is not empty. Do not make up any quote data; use only what this lookup
+    returns.
+  - if: The "Onlia Find Quote" lookup succeeded (isSuccess is true and errors is empty)
+      and returned a quote for the caller
+    then:
+    - 'Tell the caller about the quote in short spoken sentences, using only values
+      returned by the "Onlia Find Quote" lookup. Say the quote number and spell back
+      its digits one at a time, say the current status, and say the expiration date.
+      Never invent a number or a date. Then reassure the caller about the timeline
+      according to the status: if the quote is still being reviewed or processed,
+      tell them it is in progress and a broker will follow up; if it is ready, tell
+      them it can be finalized with a licensed broker; if it is close to expiring
+      or expired, tell them a broker can help refresh or renew it. Never state or
+      imply a binding rate or price; if the caller asks about price, explain that
+      only a licensed broker can confirm final pricing.'
+    - Offer to connect the caller with a licensed Onlia broker to finalize the quote.
+      If the caller accepts, or asks for a callback or a person, use the Broker Handoff
+      steps (the final step of this procedure handles it). If the caller declines,
+      thank them and let them know they can call back any time.
+    else: Tell the caller in a short, kind sentence that you could not find a quote
+      on their account. Offer to connect them with a licensed Onlia broker who can
+      look into it. If the caller accepts, or asks for a callback or a person, use
+      the Broker Handoff steps (the final step of this procedure handles it). If the
+      caller declines, thank them and let them know they can call back any time.
+  - if: The caller asks to speak to a broker, a licensed agent, a person or a human,
+      or agrees to be connected to one or to a broker callback, or asks for something
+      only a broker can do (a coverage change or upgrade, pricing, finalizing a quote,
+      billing help, or a pricing or billing exception)
+    then:
+      run: Broker Handoff
+  Verify Caller:
+  - Tell the caller in a short spoken sentence that you need to verify their identity
+    first. Ask for the email address on file. Read the email back naturally and ask
+    the caller to confirm it. Accept only an explicit yes as confirmation; otherwise
+    ask for the email again and spell it back. Once confirmed, store it <write attr="temporary.verified_email"
+    />.
+  - '<use action="Onlia Send Verification Code" /> using the confirmed email <read
+    attr="temporary.verified_email" type="attribute" />. Tell the caller: "If that
+    email is on file, you''ll get a code shortly." Never reveal whether an account
+    exists. Keep authenticationKey, customerId and customerType internally and never
+    say them aloud.'
+  - Ask the caller for the code they received. Read the digits back one at a time
+    and ask them to confirm. Then <use action="Onlia Verify Code" /> with the customerCode
+    the caller gave, and the authenticationKey, customerId and customerType from the
+    latest "Onlia Send Verification Code" result. The caller is verified only when
+    isSuccess is true, errors is empty and isVerified is true.
+  - if: 'The caller was not verified: the "Onlia Verify Code" result did not have
+      isSuccess true, empty errors and isVerified true'
+    then: Tell the caller in a short sentence that the code did not match. Offer to
+      send one new code to the same email. If the caller accepts, <use action="Onlia
+      Send Verification Code" /> again with the same confirmed email, ask for the
+      new code, read the digits back, and <use action="Onlia Verify Code" /> with
+      the customerCode plus the authenticationKey, customerId and customerType from
+      the latest send result. If the caller is still not verified, or declines a new
+      code, tell them you can't share quote details on this call, that they're welcome
+      to call back any time, thank them, create no case and <end behavior="end_phone_call"
+      />.
+  Broker Handoff:
+  - if: There is NO successful Onlia Verify Code result in this conversation (a successful
+      result has isSuccess true, empty errors and isVerified true)
+    then:
+      run: Verify Caller
+  - <use action="Onlia Find Latest Case" /> with contactId set to the customerId from
+    the successful Onlia Verify Code result in this conversation. Do not mention it
+    to the caller.
+  - if: Onlia Find Latest Case found a case for the caller
+    then: '<use action="Onlia Update Case" /> with caseId set to the case found by
+      Onlia Find Latest Case, contactId set to the verified customerId, newSubject
+      set to a short subject under 50 characters describing why the caller called
+      (for example "Policy upgrade request - caller verified"), and newDescription
+      set to 3 to 5 sentences for the broker: what the caller asked for, what was
+      already done on this call (verification, policy or quote lookup, contact details
+      updated, and so on) and what they now need from the broker. Do not create a
+      new case. Do not mention it to the caller.'
+    else: '<use action="Onlia Update Or Create Case" /> with contactId set to the
+      verified customerId, newSubject set to a short subject under 50 characters describing
+      why the caller called (for example "Policy upgrade request - caller verified"),
+      and newDescription set to 3 to 5 sentences for the broker: what the caller asked
+      for, what was already done on this call (verification, policy or quote lookup,
+      contact details updated, and so on) and what they now need from the broker.
+      Do not mention it to the caller.'
+  - 'Only after the case step above has run, say ONE short line in your own words,
+    for example: "That''s not something I''m able to handle, but I''ll pass you to
+    someone on our licensed team who can help." <handoff id="handoff-1" />'
+name: Onlia - Quote Status
+state: live
+inline_tool_definitions:
+  handoff-1:
+    type: handoff
+    in_office_hours:
+      type: end_call
+      data:
+        handover_message: You'll be passed over to a licensed broker now.
+    out_of_office_hours:
+      type: end_call
+      data:
+        handover_message: You'll be passed over to a licensed broker now.
+temporary_attributes:
+  verified_email:
+    type: string
+    description: The email address on file that the caller gave for verification,
+      confirmed by the caller with an explicit yes.
+guidance: This is a phone call, so speak in short, conversational sentences with no
+  lists or formatting. Spell back numbers digit by digit. Never provide a binding
+  rate or price. Never ask the caller for an ID. Only use data returned by the Onlia
+  connectors and never invent numbers or dates. If the caller is already verified
+  in this call, do not ask for their email or send a new code.
+categories:
+- tone
+- routing
+voice_settings:
+  data_connector_mocks:
+version: 46535580

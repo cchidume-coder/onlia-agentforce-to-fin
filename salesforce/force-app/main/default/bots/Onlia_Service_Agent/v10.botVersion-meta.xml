@@ -1,0 +1,267 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<BotVersion xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>v10</fullName>
+    <articleAnswersGPTEnabled>false</articleAnswersGPTEnabled>
+    <botDialogs>
+        <botSteps>
+            <botMessages>
+                <message>Thank you for contacting Onlia Insurance. My name is Ollie. I&apos;m here to support with a quote, your policy, pink slip or other questions. How can I help you today?</message>
+                <messageIdentifier>f511a05d-b71a-4919-91f1-797fbbdb60c3</messageIdentifier>
+            </botMessages>
+            <stepIdentifier>5d98e943-9d0c-4531-b3f5-29c9ef216b4c</stepIdentifier>
+            <type>Message</type>
+        </botSteps>
+        <botSteps>
+            <stepIdentifier>c1c4cb7a-aa82-42b5-8ecb-a030ef4cf82f</stepIdentifier>
+            <type>Wait</type>
+        </botSteps>
+        <developerName>Welcome</developerName>
+        <isPlaceholderDialog>false</isPlaceholderDialog>
+        <label>Welcome</label>
+        <showInFooterMenu>false</showInFooterMenu>
+    </botDialogs>
+    <botDialogs>
+        <botSteps>
+            <botMessages>
+                <message>Sorry, something went wrong on my end. Let me try that again.</message>
+                <messageIdentifier>33c6efe6-02b1-41c1-9c6b-f7f3690e8c09</messageIdentifier>
+            </botMessages>
+            <stepIdentifier>ec9c3821-ae5a-476d-880c-218c35cef0bb</stepIdentifier>
+            <type>Message</type>
+        </botSteps>
+        <botSteps>
+            <stepIdentifier>bd29cb7f-f520-4fb9-aceb-ac55c76993c2</stepIdentifier>
+            <type>Wait</type>
+        </botSteps>
+        <developerName>Rich_Content_Error_Handling</developerName>
+        <isPlaceholderDialog>false</isPlaceholderDialog>
+        <label>Error Handler</label>
+        <showInFooterMenu>false</showInFooterMenu>
+    </botDialogs>
+    <botDialogs>
+        <botSteps>
+            <conversationSystemMessage>
+                <type>Transfer</type>
+            </conversationSystemMessage>
+            <stepIdentifier>f13e28d9-6b01-4016-9477-42dac8f17480</stepIdentifier>
+            <type>SystemMessage</type>
+        </botSteps>
+        <developerName>Transfer_To_Agent</developerName>
+        <isPlaceholderDialog>false</isPlaceholderDialog>
+        <label>Transfer To Agent</label>
+        <showInFooterMenu>false</showInFooterMenu>
+    </botDialogs>
+    <citationsEnabled>false</citationsEnabled>
+    <conversationDefinitionPlanners>
+        <genAiPlannerName>Onlia_Service_Agent_v10</genAiPlannerName>
+    </conversationDefinitionPlanners>
+    <conversationSystemDialogs>
+        <dialog>Rich_Content_Error_Handling</dialog>
+        <type>ErrorHandling</type>
+    </conversationSystemDialogs>
+    <conversationVariables>
+        <dataType>Boolean</dataType>
+        <description>True once a physical pink-slip order has been created, to avoid duplicate mail fulfillment.</description>
+        <developerName>pinkSlipMailed</developerName>
+        <includeInPrompt>false</includeInPrompt>
+        <label>Pink Slip Mailed</label>
+        <visibility>Internal</visibility>
+    </conversationVariables>
+    <conversationVariables>
+        <dataType>Text</dataType>
+        <description>The Id of the service case created for or linked to this human handoff.</description>
+        <developerName>caseId</developerName>
+        <includeInPrompt>false</includeInPrompt>
+        <label>Case Id</label>
+        <visibility>Internal</visibility>
+    </conversationVariables>
+    <conversationVariables>
+        <dataType>Number</dataType>
+        <description>Gross Written Premium of the resolved Active policy, used to set case priority.</description>
+        <developerName>policyGwp</developerName>
+        <includeInPrompt>false</includeInPrompt>
+        <label>Policy Gwp</label>
+        <visibility>Internal</visibility>
+    </conversationVariables>
+    <conversationVariables>
+        <dataType>Text</dataType>
+        <description>The agent instructions</description>
+        <developerName>AgentScriptInternal_agent_instructions</developerName>
+        <includeInPrompt>false</includeInPrompt>
+        <label>Agent Instructions</label>
+        <visibility>Internal</visibility>
+    </conversationVariables>
+    <conversationVariables>
+        <dataType>Text</dataType>
+        <description>The next topic to be visited</description>
+        <developerName>AgentScriptInternal_next_topic</developerName>
+        <includeInPrompt>false</includeInPrompt>
+        <label>Next Topic</label>
+        <visibility>Internal</visibility>
+    </conversationVariables>
+    <conversationVariables>
+        <dataType>Text</dataType>
+        <description>A 3-5 sentence summary of the conversation, written to the case before escalating.</description>
+        <developerName>newDescription</developerName>
+        <includeInPrompt>false</includeInPrompt>
+        <label>New Description</label>
+        <visibility>Internal</visibility>
+    </conversationVariables>
+    <conversationVariables>
+        <dataType>Boolean</dataType>
+        <description>True once the case has been updated or created from the conversation summary.</description>
+        <developerName>conversationUpdated</developerName>
+        <includeInPrompt>false</includeInPrompt>
+        <label>Conversation Updated</label>
+        <visibility>Internal</visibility>
+    </conversationVariables>
+    <conversationVariables>
+        <dataType>Text</dataType>
+        <description>The Id of the customer&apos;s resolved Active insurance policy.</description>
+        <developerName>policyId</developerName>
+        <includeInPrompt>false</includeInPrompt>
+        <label>policyId</label>
+        <visibility>Internal</visibility>
+    </conversationVariables>
+    <conversationVariables>
+        <dataType>Boolean</dataType>
+        <description>True once the customer&apos;s mailing address has been updated.</description>
+        <developerName>addressUpdated</developerName>
+        <includeInPrompt>false</includeInPrompt>
+        <label>Address Updated</label>
+        <visibility>Internal</visibility>
+    </conversationVariables>
+    <conversationVariables>
+        <dataType>Text</dataType>
+        <description>The Contact Id resolved by identity verification. Actions use this when the linked ContactId is empty.</description>
+        <developerName>ResolvedContactId</developerName>
+        <includeInPrompt>false</includeInPrompt>
+        <label>Resolved Contact Id</label>
+        <visibility>Internal</visibility>
+    </conversationVariables>
+    <conversationVariables>
+        <dataType>Text</dataType>
+        <description>The Contact Id actions should use: the linked messaging ContactId, else the VoiceCall contact, else the verified ResolvedContactId. Set in before_reasoning.</description>
+        <developerName>EffectiveContactId</developerName>
+        <includeInPrompt>false</includeInPrompt>
+        <label>EffectiveContactId</label>
+        <visibility>Internal</visibility>
+    </conversationVariables>
+    <conversationVariables>
+        <dataType>Text</dataType>
+        <description>The Id of the customer&apos;s resolved open quote.</description>
+        <developerName>quoteId</developerName>
+        <includeInPrompt>false</includeInPrompt>
+        <label>Quote Id</label>
+        <visibility>Internal</visibility>
+    </conversationVariables>
+    <conversationVariables>
+        <dataType>Text</dataType>
+        <description>The active channel for this conversation: &apos;Voice&apos; on a phone call, &apos;Messaging&apos; on chat. Set in before_reasoning from whichever context is populated.</description>
+        <developerName>ChannelType</developerName>
+        <includeInPrompt>false</includeInPrompt>
+        <label>Channel Type</label>
+        <visibility>Internal</visibility>
+    </conversationVariables>
+    <conversationVariables>
+        <dataType>Text</dataType>
+        <description>The verified customer&apos;s name, used to greet them by name.</description>
+        <developerName>CustomerName</developerName>
+        <includeInPrompt>false</includeInPrompt>
+        <label>Customer Name</label>
+        <visibility>Internal</visibility>
+    </conversationVariables>
+    <conversationVariables>
+        <dataType>Text</dataType>
+        <description>The email address the customer gave for verification; passed to send/validate/get-info actions.</description>
+        <developerName>verifiedEmail</developerName>
+        <includeInPrompt>false</includeInPrompt>
+        <label>Verified Email</label>
+        <visibility>Internal</visibility>
+    </conversationVariables>
+    <conversationVariables>
+        <dataType>Boolean</dataType>
+        <description>True once the policy summary card has been rendered, to avoid re-rendering.</description>
+        <developerName>policyCardShown</developerName>
+        <includeInPrompt>false</includeInPrompt>
+        <label>Policy Card Shown</label>
+        <visibility>Internal</visibility>
+    </conversationVariables>
+    <conversationVariables>
+        <dataType>Text</dataType>
+        <description>A short (&lt;50 char) subject summarizing the customer&apos;s reason for contact.</description>
+        <developerName>newSubject</developerName>
+        <includeInPrompt>false</includeInPrompt>
+        <label>New Subject</label>
+        <visibility>Internal</visibility>
+    </conversationVariables>
+    <conversationVariables>
+        <dataType>Text</dataType>
+        <description>Contact Type for the Contact that the verification code was sent to</description>
+        <developerName>Resolved_Contact_Type</developerName>
+        <includeInPrompt>false</includeInPrompt>
+        <label>ResolvedContactType</label>
+        <visibility>Internal</visibility>
+    </conversationVariables>
+    <conversationVariables>
+        <dataType>Boolean</dataType>
+        <description>Runtime condition evaluation for if statements</description>
+        <developerName>AgentScriptInternal_condition_1</developerName>
+        <includeInPrompt>false</includeInPrompt>
+        <label>Runtime Condition 1</label>
+        <visibility>Internal</visibility>
+    </conversationVariables>
+    <conversationVariables>
+        <dataType>Boolean</dataType>
+        <description>True once the quote summary card has been rendered, to avoid re-rendering.</description>
+        <developerName>quoteCardShown</developerName>
+        <includeInPrompt>false</includeInPrompt>
+        <label>Quote Card Shown</label>
+        <visibility>Internal</visibility>
+    </conversationVariables>
+    <conversationVariables>
+        <dataType>Boolean</dataType>
+        <description>True once a pink-slip has been emailed, to avoid duplicate email fulfillment.</description>
+        <developerName>pinkSlipEmailed</developerName>
+        <includeInPrompt>false</includeInPrompt>
+        <label>Pink Slip Emailed</label>
+        <visibility>Internal</visibility>
+    </conversationVariables>
+    <conversationVariables>
+        <dataType>Text</dataType>
+        <developerName>authKey</developerName>
+        <includeInPrompt>false</includeInPrompt>
+        <label>authKey</label>
+        <visibility>Internal</visibility>
+    </conversationVariables>
+    <conversationVariables>
+        <dataType>Boolean</dataType>
+        <description>True once the customer has passed email + one-time-code verification in this conversation.</description>
+        <developerName>isCustomerVerified</developerName>
+        <includeInPrompt>false</includeInPrompt>
+        <label>Is Customer Verified</label>
+        <visibility>Internal</visibility>
+    </conversationVariables>
+    <conversationVariables>
+        <dataType>Boolean</dataType>
+        <description>True once a verification code has been emailed, so the agent asks for the code rather than re-sending.</description>
+        <developerName>verificationSent</developerName>
+        <includeInPrompt>false</includeInPrompt>
+        <label>Verification Sent</label>
+        <visibility>Internal</visibility>
+    </conversationVariables>
+    <copilotPrimaryLanguage>en_US</copilotPrimaryLanguage>
+    <defaultStdObjForContactIdFltrEnabled>false</defaultStdObjForContactIdFltrEnabled>
+    <entryDialog>Welcome</entryDialog>
+    <intentDisambiguationEnabled>false</intentDisambiguationEnabled>
+    <intentV3Enabled>false</intentV3Enabled>
+    <isScriptCompatibleAgent>true</isScriptCompatibleAgent>
+    <knowledgeActionEnabled>false</knowledgeActionEnabled>
+    <knowledgeFallbackEnabled>false</knowledgeFallbackEnabled>
+    <smallTalkEnabled>false</smallTalkEnabled>
+    <staticPromptsEnabled>false</staticPromptsEnabled>
+    <stopRecPrompts>false</stopRecPrompts>
+    <stopWelcomePrompts>false</stopWelcomePrompts>
+    <surfacesEnabled>false</surfacesEnabled>
+    <toneType>Casual</toneType>
+</BotVersion>

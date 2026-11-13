@@ -1,0 +1,145 @@
+---
+id: 2209052
+positive_triggers:
+- I need to update my address
+- I moved and want to change the address on my account
+- Can you change my email address on file?
+- I have a new phone number I'd like you to use
+- I want to update my contact details
+- My postal code is wrong on my policy, can you fix it?
+- Please change my mailing address
+- I'd like to update my email and phone number
+negative_triggers:
+- I want to file a claim
+- How much is my premium this month?
+- I'd like to cancel my policy
+- I need a copy of my insurance certificate
+- I want to make a payment
+- Can I get a quote for a new policy?
+- I forgot my verification code
+- What are your office hours?
+trigger_description: The caller wants to change or update the contact details Onlia
+  has on file for them, such as their address, email address or phone number.
+targeting:
+  channels:
+  - phone_call
+agentic_switch: false
+procedure:
+  main:
+  - if: There is NO successful Onlia Verify Code result earlier in this conversation
+      (a successful result has isSuccess true, empty errors and isVerified true)
+    then:
+      run: Verify Caller
+  - 'Ask the caller which contact details they would like to change: street, city,
+    state, postal code, email, or phone number. Then, one question at a time, collect
+    the new value only for each field they want to change. Do not ask about fields
+    they are not changing.'
+  - Read back every new value to the caller. Read any email address back naturally,
+    and read postal codes and phone numbers in short groups. Then ask them to clearly
+    say yes if everything is correct. If they correct anything, update the value,
+    read all the new values back again, and ask again. Only continue once the caller
+    has given an explicit yes.
+  - Only if the caller gave an explicit yes to the read-back, <use action="Onlia Update
+    Contact" /> with verifiedContactID set to the customerId from the successful "Onlia
+    Verify Code" step, and only the fields the caller is changing among newStreetAddress,
+    newCity, newState, newPostalCode, newEmailAddress and newPhoneNumber. If the caller
+    did not confirm, do not call it.
+  - If the caller did not confirm the new details, do not claim anything was saved;
+    ask what they would like to correct or whether they want to stop. Otherwise, check
+    whether the "Onlia Update Contact" call succeeded. If it succeeded, tell the caller
+    in a short spoken sentence that their contact details have been updated, and ask
+    if there is anything else you can help with. If it failed, apologize briefly,
+    tell them the update failed and their details were not saved, and offer to connect
+    them with a licensed Onlia broker. If the caller accepts (or asks for a person
+    or a callback), use the Broker Handoff steps (the final step of this procedure
+    handles it).
+  - if: The caller asks to speak to a broker, a licensed agent, a person or a human,
+      or agrees to be connected to one or to a broker callback, or asks for something
+      only a broker can do (a coverage change or upgrade, pricing, finalizing a quote,
+      billing help, or a pricing or billing exception)
+    then:
+      run: Broker Handoff
+  Verify Caller:
+  - Tell the caller in a short spoken sentence that you need to verify their identity
+    first. Ask for the email address they have on file. Read it back to them naturally
+    and ask them to clearly say yes if it is correct. Accept only an explicit yes;
+    if they correct anything, spell the new email back and ask again. Once they say
+    yes, store it as <write attr="temporary.verified_email" />.
+  - <use action="Onlia Send Verification Code" /> with the email <read attr="temporary.verified_email"
+    type="attribute" />. Then say "If that email is on file, you'll get a code shortly."
+    Never reveal whether an account exists for that email. Keep the authenticationKey,
+    customerId and customerType from the result internally and never say them aloud.
+  - Ask the caller for the verification code they received. Read the digits back one
+    by one and ask them to confirm. Then <use action="Onlia Verify Code" /> with customerCode
+    set to the code the caller gave, and authenticationKey, customerId and customerType
+    taken from the latest Onlia Send Verification Code result. The caller is verified
+    only when isSuccess is true, errors is empty and isVerified is true.
+  - If the caller is not verified, tell them the code did not match and offer to send
+    one new code to the same email. If they agree, <use action="Onlia Send Verification
+    Code" /> again with the email <read attr="temporary.verified_email" type="attribute"
+    />, ask for the new code, read the digits back, and keep the authenticationKey,
+    customerId and customerType from this latest send result internally. If the caller
+    is already verified, do nothing here.
+  - If the caller received a new code, <use action="Onlia Verify Code" /> with customerCode
+    set to the new code and authenticationKey, customerId and customerType taken from
+    the latest Onlia Send Verification Code result. If the caller is still not verified
+    (they declined a new code, or isSuccess is not true, errors is not empty, or isVerified
+    is not true), tell them you can't change contact details on this call, that they're
+    welcome to call back any time, thank them and <end behavior="end_phone_call" />.
+    If the caller is verified, continue.
+  Broker Handoff:
+  - if: There is NO successful Onlia Verify Code result in this conversation (a successful
+      result has isSuccess true, empty errors and isVerified true)
+    then:
+      run: Verify Caller
+  - <use action="Onlia Find Latest Case" /> with contactId set to the customerId from
+    the successful Onlia Verify Code result in this conversation. Do not mention it
+    to the caller.
+  - if: Onlia Find Latest Case found a case for the caller
+    then: '<use action="Onlia Update Case" /> with caseId set to the case found by
+      Onlia Find Latest Case, contactId set to the verified customerId, newSubject
+      set to a short subject under 50 characters describing why the caller called
+      (for example "Policy upgrade request - caller verified"), and newDescription
+      set to 3 to 5 sentences for the broker: what the caller asked for, what was
+      already done on this call (verification, policy or quote lookup, contact details
+      updated, and so on) and what they now need from the broker. Do not create a
+      new case. Do not mention it to the caller.'
+    else: '<use action="Onlia Update Or Create Case" /> with contactId set to the
+      verified customerId, newSubject set to a short subject under 50 characters describing
+      why the caller called (for example "Policy upgrade request - caller verified"),
+      and newDescription set to 3 to 5 sentences for the broker: what the caller asked
+      for, what was already done on this call (verification, policy or quote lookup,
+      contact details updated, and so on) and what they now need from the broker.
+      Do not mention it to the caller.'
+  - 'Only after the case step above has run, say ONE short line in your own words,
+    for example: "That''s not something I''m able to handle, but I''ll pass you to
+    someone on our licensed team who can help." <handoff id="handoff-1" />'
+name: Onlia - Update Contact Details
+state: live
+inline_tool_definitions:
+  handoff-1:
+    type: handoff
+    in_office_hours:
+      type: end_call
+      data:
+        handover_message: You'll be passed over to a licensed broker now.
+    out_of_office_hours:
+      type: end_call
+      data:
+        handover_message: You'll be passed over to a licensed broker now.
+temporary_attributes:
+  verified_email:
+    type: string
+    description: The email address on file that the caller gave and explicitly confirmed,
+      used to send the verification code.
+guidance: This is a live phone call, so everything is spoken aloud. Use short, conversational
+  sentences with no lists or formatting. Ask one question at a time. Never ask the
+  caller for an ID; the contactId is the customerId from the successful Onlia Verify
+  Code step earlier in the call. If the caller is already verified in this call, do
+  not ask for their email or send a new code.
+categories:
+- tone
+- routing
+voice_settings:
+  data_connector_mocks:
+version: 46535589

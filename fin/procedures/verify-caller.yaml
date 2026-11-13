@@ -1,0 +1,104 @@
+---
+id: 2209056
+positive_triggers:
+- Hi, I'd like to check on the status of my quote
+- I need to get a pink slip for my policy
+- I want to update my contact details
+- Can you tell me about my policy?
+- I want to check my active policy
+- I need to speak to a broker
+- I want to know what's covered under my commercial auto policy
+- I need to change my phone number on my account
+negative_triggers:
+- What are your office hours?
+- I want to file a claim for an accident that just happened
+- I need roadside assistance right now
+- Can you transfer me to sales for a personal home insurance quote?
+- I'm a broker calling to discuss a commission payment
+- I'm calling to complain about my last bill from another company
+- Who are you and what do you do?
+- Can you tell me about my coverage options?
+- Can I bundle auto and home insurance?
+- What are your billing and payment terms?
+trigger_description: A caller to Onlia, a commercial-auto insurance provider, wants
+  something specific to their own account, such as their policy or its details, their
+  quote status, a pink slip, updating their contact details, or a broker callback
+  about their account, and needs to be verified.
+targeting:
+  channels:
+  - phone_call
+agentic_switch: false
+procedure:
+  main:
+  - 'Greet the caller briefly and ask for the email address they have on file with
+    Onlia. Once they give it, read it back to them naturally and ask them to say yes
+    if it is correct. If they say no, ask for the email again and repeat the spell-back
+    until they confirm with a yes. When confirmed, store the confirmed email: <write
+    attr="temporary.verified_email" />.'
+  - '<use action="Onlia Send Verification Code" /> using the confirmed email <read
+    attr="temporary.verified_email" type="attribute" />. Then say: "If that email
+    is on file, you''ll get a code shortly." Never reveal or hint whether an account
+    exists for that email. Internally keep authenticationKey, customerId and customerType
+    from this most recent Send Verification Code result. Never read them out and never
+    ask the caller for an ID.'
+  - |-
+    Run the first verification round.
+
+    Ask the caller for the code from the email. Read the digits back one at a time and ask them to confirm with a yes. If they say no, ask again and re-confirm. Once confirmed, <use action="Onlia Verify Code" /> passing customerCode as the confirmed code, and authenticationKey, customerId and customerType all taken from the most recent Onlia Send Verification Code result. The caller is verified only when isSuccess is true, errors is empty and isVerified is true. If the caller is not verified, tell them the code didn't work and ask them to try again, then repeat this process with the new code. Allow up to three failed codes in total in this round.
+  - if: 'The most recent Onlia Verify Code result shows the caller is verified: isSuccess
+      is true, errors is empty and isVerified is true'
+    then: 'Thank the caller for verifying. The customerId from the Onlia Verify Code
+      result is the contactId for all later connectors; it only ever comes from a
+      successful Onlia Verify Code. Keep <read attr="temporary.verified_email" type="attribute"
+      /> and the contactId for later procedures. Never switch to a different customer
+      during this call. Ask what they need help with today: quote status, policy details,
+      a pink slip, a contact update, or speaking with a broker, then continue helping
+      them.'
+    else:
+      run: Retry Verification
+  Retry Verification:
+  - 'Tell the caller that you weren''t able to verify them with that code and that
+    you''ll send a fresh one. Ask again for the email address they have on file. Read
+    it back naturally and get a yes. If they say no, ask again and repeat the spell-back
+    until confirmed. When confirmed, store it again: <write attr="temporary.verified_email"
+    />.'
+  - '<use action="Onlia Send Verification Code" /> using the newly confirmed email
+    <read attr="temporary.verified_email" type="attribute" />. Then say: "If that
+    email is on file, you''ll get a code shortly." Never reveal whether an account
+    exists. Internally keep authenticationKey, customerId and customerType from this
+    new Send Verification Code result, and use only this new result for the next Verify
+    Code call. Never read them out and never ask the caller for an ID.'
+  - Ask the caller for the code from the email. Read the digits back one at a time
+    and ask them to confirm with a yes. Once confirmed, <use action="Onlia Verify
+    Code" /> passing customerCode as the confirmed code, and authenticationKey, customerId
+    and customerType all taken from the newest Onlia Send Verification Code result.
+    The caller is verified only when isSuccess is true, errors is empty and isVerified
+    is true. If not verified, tell them the code didn't work and ask them to try again,
+    allowing up to three failed codes in total in this round.
+  - if: 'The most recent Onlia Verify Code result shows the caller is verified: isSuccess
+      is true, errors is empty and isVerified is true'
+    then: 'Thank the caller for verifying. The customerId from the most recent successful
+      Onlia Verify Code result is the contactId for all later connectors; it only
+      ever comes from a successful Onlia Verify Code. Keep <read attr="temporary.verified_email"
+      type="attribute" /> and the contactId for later procedures. Never switch to
+      a different customer during this call. Ask what they need help with today: quote
+      status, policy details, a pink slip, a contact update, or speaking with a broker,
+      then continue helping them.'
+    else: Apologize that you still couldn't verify them. Explain that for their security
+      you can't continue on this call, and say they're welcome to call back any time.
+      Politely thank them for calling and say goodbye. Do not create any case because
+      the caller is not verified. <end behavior="end_phone_call" />
+name: Onlia - Verify Caller
+state: live
+temporary_attributes:
+  verified_email:
+    type: string
+    description: The email address on file that the caller confirmed by spelling it
+      back and saying yes. Updated if the caller is asked for their email again after
+      failed codes.
+categories:
+- tone
+- routing
+voice_settings:
+  data_connector_mocks:
+version: 46533935

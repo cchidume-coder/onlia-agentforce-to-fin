@@ -1,0 +1,5 @@
+{
+  "name": "onlia-fin",
+  "version": "0.1.0",
+  "description": "Intercom / Fin MCP connection for migrating the Onlia Salesforce Service Agent to a Fin Voice Agent"
+}

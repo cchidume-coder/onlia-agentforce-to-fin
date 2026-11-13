@@ -1,0 +1,18 @@
+---
+type: guidance
+id: 459621
+title: Broker requests go through Broker Handoff
+state: paused
+category: voice_routing
+audiences: []
+target_channels:
+- voice
+prompt: 'When a caller asks to speak to a broker, a licensed agent, a person or a
+  human, or asks for a coverage change, pricing, a quote to be finalized, billing
+  help or a pricing or billing exception, do NOT escalate directly. Use the "Onlia
+  - Broker Handoff" procedure instead: it updates the caller''s Salesforce case with
+  a summary of the call and then hands the caller to a licensed broker, so the broker
+  knows what has already happened. Only escalate directly if the Broker Handoff procedure
+  cannot run (for example it fails twice), or the caller is distressed or reporting
+  an emergency.'
+

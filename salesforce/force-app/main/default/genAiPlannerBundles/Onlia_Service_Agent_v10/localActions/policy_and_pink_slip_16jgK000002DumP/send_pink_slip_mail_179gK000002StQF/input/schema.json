@@ -1,0 +1,28 @@
+{
+  "required" : [ "policyId", "contactId" ],
+  "unevaluatedProperties" : false,
+  "properties" : {
+    "confirmedMailingAddress" : {
+      "title" : "Confirmed Mailing Address",
+      "description" : "The mailing address the customer confirmed for the physical copy",
+      "lightning:type" : "lightning__textType",
+      "lightning:isPII" : false,
+      "copilotAction:isUserInput" : false
+    },
+    "contactId" : {
+      "title" : "Contact Id",
+      "description" : "The customer's Contact Id",
+      "lightning:type" : "lightning__textType",
+      "lightning:isPII" : false,
+      "copilotAction:isUserInput" : false
+    },
+    "policyId" : {
+      "title" : "Policy Id",
+      "description" : "The policy Id to mail a pink slip for",
+      "lightning:type" : "lightning__textType",
+      "lightning:isPII" : false,
+      "copilotAction:isUserInput" : false
+    }
+  },
+  "lightning:type" : "lightning__objectType"
+}

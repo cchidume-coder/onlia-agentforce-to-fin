@@ -1,0 +1,117 @@
+---
+id: 2209057
+positive_triggers:
+- I want to change my coverage.
+- Can you tell me how much this will cost?
+- I'd like to finalize my quote.
+- I need help with my bill.
+- Can I speak to a broker?
+- Let me talk to a real person.
+- I want to add a driver to my policy.
+- I have a question about my premium.
+- Can you waive my late fee?
+- Can I get a discount on my premium?
+- Can you change my payment date?
+- I want a refund on my policy.
+- Can you price match another insurer?
+negative_triggers:
+- I want to cancel my policy.
+- What are your office hours?
+- I need to file a claim.
+- I forgot my online account password.
+- Where can I find my policy documents?
+- I want to update my mailing address.
+trigger_description: The caller wants to change their coverage, asks about pricing,
+  wants to finalize a quote, needs help with billing, asks for a pricing or billing
+  exception (discount, waived fee, changed payment date or terms, refund, price match,
+  reinstatement), or asks to speak to a person or a broker.
+targeting:
+  channels:
+  - phone_call
+agentic_switch: false
+procedure:
+  main:
+  - Acknowledge what the caller needs in one short sentence.
+  - if: There is NO successful Onlia Verify Code result in this conversation (a successful
+      result has isSuccess true, empty errors and isVerified true)
+    then:
+      run: Verify Caller
+  - <use action="Onlia Find Latest Case" /> with contactId set to the verified customerId.
+    If the caller was already verified earlier in this conversation, use the customerId
+    from that successful Onlia Verify Code result.
+  - if: Onlia Find Latest Case succeeded and a case was found for the caller
+    then: '<use action="Onlia Update Case" /> with caseId set to the case found by
+      Onlia Find Latest Case, contactId set to the verified customerId, newSubject
+      set to a short subject under 50 characters describing the caller''s request,
+      and newDescription set to 3 to 5 sentences summarising the call: who called
+      and what they asked for. Do not create a new case. If the update fails, do not
+      tell the caller that a case was logged.'
+    else: '<use action="Onlia Update Or Create Case" /> with contactId set to the
+      verified customerId, newSubject set to a short subject under 50 characters describing
+      the caller''s request, and newDescription set to 3 to 5 sentences summarising
+      the call: who called and what they asked for. If it fails, do not tell the caller
+      that a case was logged.'
+  - if: The caller asked for a callback instead of being passed to the licensed team
+    then:
+    - Ask the caller which phone number should be called back. Offer the number on
+      file, or let them give another. Read the digits back in groups and ask them
+      to confirm. If wrong, ask again and read back again.
+    - <use action="Onlia Schedule Callback" /> with contactId set to the verified
+      customerId, preferredPhone set to the confirmed number, and requestDescription
+      set to a short description of what the caller needs help with. If it succeeds,
+      relay the confirmationMessage from the result to the caller and thank them for
+      calling. If it fails, tell the caller the callback could not be scheduled, do
+      not promise a callback, and say they can call back any time.
+    else: 'Say ONE short line in your own words, for example: "That''s not something
+      I''m able to handle, but I''ll pass you to someone on our licensed team who
+      can help." <handoff id="handoff-1" />'
+  Verify Caller:
+  - Tell the caller that you need to verify their identity first.
+  - Ask the caller for the email address on file. Read the email back to them naturally
+    and ask them to confirm it is correct. Only accept an explicit yes. If it is wrong,
+    ask for it again and spell it back again until they confirm. Once confirmed, remember
+    it as <write attr="temporary.verified_email" />.
+  - <use action="Onlia Send Verification Code" /> using the confirmed email <read
+    attr="temporary.verified_email" type="attribute" />. Tell the caller a verification
+    code is on its way and ask them to read it out when it arrives.
+  - Ask the caller for the verification code. Then <use action="Onlia Verify Code"
+    /> with customerCode set to the code the caller gave, and authenticationKey, customerId
+    and customerType taken from the latest Onlia Send Verification Code result. Tell
+    the caller whether the verification worked.
+  - if: The verification code check was not successful, so the caller is not verified
+      in this call
+    then: 'Say that the code did not match. Offer to try once more: ask the caller
+      if they would like a new code sent, and if so, send a new code to the same email
+      <read attr="temporary.verified_email" type="attribute" /> and verify the code
+      the caller gives. If the caller still cannot be verified, say that a callback
+      cannot be arranged on this call. Thank them politely and say they are welcome
+      to call back any time. <end behavior="end_phone_call" />'
+name: Onlia - Broker Handoff
+state: live
+inline_tool_definitions:
+  handoff-1:
+    type: handoff
+    in_office_hours:
+      type: end_call
+      data:
+        handover_message: You'll be passed over to a licensed broker now.
+    out_of_office_hours:
+      type: end_call
+      data:
+        handover_message: You'll be passed over to a licensed broker now.
+temporary_attributes:
+  verified_email:
+    type: string
+    description: The email address the caller confirmed with an explicit yes, used
+      to send the verification code.
+guidance: This is a phone call. Use short, spoken sentences. If the caller is already
+  verified in this call, do not ask for their email or send a new code. Never claim
+  a case or callback exists unless the connector succeeded. Create no case or callback
+  until the caller is verified in this call. Never repeat the voice channel's own
+  transfer message.
+categories:
+- tone
+- routing
+voice_settings:
+  data_connector_mocks:
+version: 46533964

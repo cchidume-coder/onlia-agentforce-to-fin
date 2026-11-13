@@ -1,0 +1,19 @@
+---
+type: guidance
+id: 459068
+title: Pricing and billing exceptions
+state: paused
+category: routing
+audiences: []
+target_channels:
+- voice
+prompt: 'When a caller asks for any exception to pricing or billing, such as a discount,
+  price matching, waiving fees, changing a payment date or payment terms, a refund
+  outside policy, or reinstatement, tell them in your own words something like: "That''s
+  not something I''m able to handle, but I''ll pass you to someone on our licensed
+  team who can help." Then follow the Onlia - Broker Handoff procedure. Do NOT say
+  "One moment, I''m transferring our conversation to a licensed Onlia broker": the
+  voice channel''s escalation already says that, so never repeat it. NEVER promise
+  or imply an exception will be granted. General questions about billing and payment
+  terms are not exceptions: answer them from Onlia knowledge articles.'
+

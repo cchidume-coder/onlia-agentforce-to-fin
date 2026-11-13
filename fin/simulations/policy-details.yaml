@@ -1,0 +1,139 @@
+---
+type: simulation_set
+procedure_id: 73147066
+tests:
+- type: simulation_test
+  id: 115516
+  name: Unverified caller requests policy
+  opening_message: Hi, can you tell me my policy number please?
+  customer_context:
+  user_id:
+  test_customer_persona_id:
+  brand_id:
+  trigger_type: intent
+  assertions:
+  - outcome: finished
+  - agent_response: Fin told the user they must be verified first before policy details
+      can be shared
+  - agent_response: Fin did not tell the user a policy number
+  - agent_response: Fin did not ask the user for any ID
+- type: simulation_test
+  id: 115518
+  name: Verified caller asks policy and address
+  opening_message: Hi, I'd like to get some details about my insurance policy please.
+  customer_context: The user has already been verified earlier in the conversation.
+    Their email is dana.reyes@reyesfreight.com and their verification code was 482910.
+    After Fin tells them their policy type and number, the user will ask for their
+    mailing address.
+  user_id:
+  test_customer_persona_id:
+  brand_id:
+  trigger_type: intent
+  assertions:
+  - outcome: finished
+  - agent_response: Fin told the user their policy type
+  - agent_response: Fin told the user their policy number, spelling it out one character
+      at a time
+  - agent_response: Fin asked the user if there was anything else they would like
+      to know about their policy
+  - agent_response: Fin read the mailing address back to the user in short chunks
+  - agent_response: Fin offered to repeat the mailing address
+- type: simulation_test
+  id: 116753
+  name: Policy details then asks for a broker (case must update first)
+  opening_message: Hi, I'd like the details of my active policy please.
+  customer_context: 'The caller''s email on file is test.caller@example.com and they
+    confirm it when read back. The verification code they received is 509610. After
+    hearing their policy type and number, they say: "Thanks. I''d like to upgrade
+    my coverage. Can I speak with a broker?" If asked whether they want to be connected
+    now, they say yes.'
+  user_id:
+  test_customer_persona_id:
+  brand_id:
+  trigger_type: intent
+  data_connector_mocks:
+    Onlia Send Verification Code:
+      response_code: 200
+      response_body:
+        isSuccess: true
+        errors:
+        authenticationKey: mock-key
+        customerId: 003000000000001AAA
+        customerType: Contact
+        verificationMessage: If you have provided a valid email or username, you should
+          receive a verification code to verify your identity. Please enter the code
+    Onlia Verify Code:
+      response_code: 200
+      response_body:
+        isSuccess: true
+        errors:
+        isVerified: true
+        customerId: 003000000000001AAA
+        customerType: Contact
+    Onlia Find Active Policy:
+      response_code: 200
+      response_body:
+        isSuccess: true
+        errors:
+        policyId: a4q000000000001AAA
+        policyName: Omega, Inc. - Commercial Auto
+        policyNumber: CA-2024-90417
+        policyType: Commercial Auto
+        mailingAddress: 1 Market St, San Francisco, CA 94105, USA
+    Onlia Send Pink Slip Email:
+      response_code: 200
+      response_body:
+        isSuccess: true
+        errors:
+        confirmationMessage: Done — I emailed your pink slip to test.caller@example.com.
+        errorMessage:
+    Onlia Send Pink Slip Mail:
+      response_code: 200
+      response_body:
+        isSuccess: true
+        errors:
+        orderId: 801MOCK
+        confirmationMessage: Done — a physical pink slip is on its way.
+        errorMessage:
+    Onlia Update Contact:
+      response_code: 200
+      response_body:
+        isSuccess: true
+        errors:
+    Onlia Find Latest Case:
+      response_code: 200
+      response_body:
+        found: true
+        caseId: 500000000000001AAA
+        caseNumber: '00001471'
+        subject: Onlia voice call
+        status: Working
+    Onlia Update Case:
+      response_code: 200
+      response_body:
+        isSuccess: true
+        errors:
+        caseId: 500000000000001AAA
+        wasUpdated: true
+    Onlia Update Or Create Case:
+      response_code: 200
+      response_body:
+        isSuccess: true
+        errors:
+        caseId: 500000000000001AAA
+        wasUpdated: false
+    Onlia Schedule Callback:
+      response_code: 200
+      response_body:
+        isSuccess: true
+        errors:
+        contactRequestId: 0RtMOCK
+        confirmationMessage: A licensed broker will call you back.
+  assertions:
+  - data_connector: Onlia Find Active Policy
+    is: triggered
+  - data_connector: Onlia Find Latest Case
+    is: triggered
+  - data_connector: Onlia Update Case
+    is: triggered
+

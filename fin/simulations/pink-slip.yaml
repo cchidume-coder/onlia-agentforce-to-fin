@@ -1,0 +1,227 @@
+---
+type: simulation_set
+procedure_id: 73147311
+tests:
+- type: simulation_test
+  id: 115522
+  name: Pink slip by mail confirmed
+  opening_message: Hi, I'd like to get a copy of my pink slip please.
+  customer_context: The user's email address on file is dana.reyes@reyesfreight.com.
+    The user's verification code is 482910. The user wants the pink slip sent by mail.
+    The user will confirm the mailing address read-back with an explicit yes.
+  user_id:
+  test_customer_persona_id:
+  brand_id:
+  trigger_type: intent
+  assertions:
+  - outcome: finished
+  - agent_response: Fin asked the caller for the email address on file for identity
+      verification
+  - agent_response: Fin spelled back the email address dana.reyes@reyesfreight.com
+      letter by letter, saying 'at' for @ and 'dot' for each dot
+  - agent_response: Fin told the caller a verification code was sent and asked them
+      to read it out
+  - agent_response: Fin asked the caller whether they want the pink slip sent by email,
+      by mail, or both
+  - agent_response: Fin read back the mailing address slowly in short pieces and asked
+      the caller to confirm it
+  - agent_response: Fin relayed a confirmation message to the caller after sending
+      the pink slip by mail
+  - agent_response: Fin asked the caller if they need anything else
+  - data_connector: Onlia Send Verification Code
+    is: triggered
+  - data_connector: Onlia Verify Code
+    is: triggered
+  - data_connector: Onlia Find Active Policy
+    is: triggered
+  - data_connector: Onlia Send Pink Slip Mail
+    is: triggered
+- type: simulation_test
+  id: 115523
+  name: Pink slip by email confirmed
+  opening_message: Hi, I'd like to get a copy of my pink slip please.
+  customer_context: The user's email address on file is dana.reyes@reyesfreight.com.
+    The user will confirm the email read-back with an explicit yes. The verification
+    code the user received is 482910. The user wants the pink slip sent by email only.
+    The user will confirm the email address read back to them with an explicit yes.
+  user_id:
+  test_customer_persona_id:
+  brand_id:
+  trigger_type: intent
+  assertions:
+  - outcome: finished
+  - agent_response: Fin asked the caller for the email address on file for identity
+      verification
+  - agent_response: Fin spelled out the email address dana.reyes@reyesfreight.com
+      letter by letter, saying 'at' for @ and 'dot' for each dot
+  - agent_response: Fin told the caller a verification code was sent and asked them
+      to read it out
+  - agent_response: Fin asked the caller whether they want the pink slip sent by email,
+      by mail, or both
+  - agent_response: Fin read back the email address dana.reyes@reyesfreight.com letter
+      by letter, saying 'at' for @ and 'dot' for each dot, and asked the caller to
+      confirm
+  - agent_response: Fin relayed the confirmation message from the Onlia Send Pink
+      Slip Email connector to the caller
+  - agent_response: Fin asked the caller if they need anything else
+  - data_connector: Onlia Send Verification Code
+    is: triggered
+  - data_connector: Onlia Verify Code
+    is: triggered
+  - data_connector: Onlia Find Active Policy
+    is: triggered
+  - data_connector: Onlia Send Pink Slip Email
+    is: triggered
+- type: simulation_test
+  id: 115525
+  name: Caller declines email and address
+  opening_message: Hi, I need to get my pink slip please.
+  customer_context: The user's email address is john.smith@example.com. When Fin reads
+    back the email, the user says it is wrong. When Fin reads back the mailing address,
+    the user says it is old and incorrect. The user wants the pink slip sent by both
+    email and mail.
+  user_id:
+  test_customer_persona_id:
+  brand_id:
+  trigger_type: intent
+  data_connector_mocks:
+    Onlia Send Verification Code:
+      response_code: 200
+      response_body:
+        authenticationKey: auth-key-abc
+        customerId: cust-001
+        customerType: primary
+    Onlia Verify Code:
+      response_code: 200
+      response_body:
+        isSuccess: true
+        customerId: cust-001
+        customerType: primary
+    Onlia Find Active Policy:
+      response_code: 200
+      response_body:
+        policyId: pol-999
+        policyNumber: ON-123456
+        policyType: auto
+        mailingAddress: 123 Maple Street, Toronto, ON M1A 1A1
+  assertions:
+  - outcome: finished
+  - agent_response: Fin asked the caller whether they want the pink slip sent by email,
+      by mail, or both
+  - agent_response: Fin read back the email address letter by letter and asked the
+      caller to confirm
+  - agent_response: Fin told the caller it will not send the pink slip by email
+  - agent_response: Fin offered to update the caller's contact details for email
+  - agent_response: Fin read back the mailing address and asked the caller to confirm
+  - agent_response: Fin told the caller it will not send the pink slip by mail
+  - agent_response: Fin offered to update the caller's contact details for mail
+  - agent_response: Fin asked the caller if they need anything else
+  - data_connector: Onlia Send Verification Code
+    is: triggered
+  - data_connector: Onlia Verify Code
+    is: triggered
+  - data_connector: Onlia Find Active Policy
+    is: triggered
+- type: simulation_test
+  id: 116575
+  name: Pink slip then asks for a broker (case must update first)
+  opening_message: Hi, I can't seem to find my pink slip. Can you help me get that
+    sent over?
+  customer_context: 'The caller''s email on file is test.caller@example.com and
+    they confirm it when read back. The verification code they received is 509610.
+    They want the pink slip by email only and confirm the email. After the pink slip
+    is sent, they say: "I''m looking to upgrade this policy. If I can speak with a
+    broker, that''d be great." If asked whether they want to be connected to a broker
+    now or get a callback, they want to be connected now.'
+  user_id:
+  test_customer_persona_id:
+  brand_id:
+  trigger_type: intent
+  data_connector_mocks:
+    Onlia Send Verification Code:
+      response_code: 200
+      response_body:
+        isSuccess: true
+        errors:
+        authenticationKey: mock-key
+        customerId: 003000000000001AAA
+        customerType: Contact
+        verificationMessage: If you have provided a valid email or username, you should
+          receive a verification code to verify your identity. Please enter the code
+    Onlia Verify Code:
+      response_code: 200
+      response_body:
+        isSuccess: true
+        errors:
+        isVerified: true
+        customerId: 003000000000001AAA
+        customerType: Contact
+    Onlia Find Active Policy:
+      response_code: 200
+      response_body:
+        isSuccess: true
+        errors:
+        policyId: a4q000000000001AAA
+        policyName: Omega, Inc. - Commercial Auto
+        policyNumber: CA-2024-90417
+        policyType: Commercial Auto
+        mailingAddress: 1 Market St, San Francisco, CA 94105, USA
+    Onlia Send Pink Slip Email:
+      response_code: 200
+      response_body:
+        isSuccess: true
+        errors:
+        confirmationMessage: Done — I emailed your pink slip to test.caller@example.com.
+        errorMessage:
+    Onlia Send Pink Slip Mail:
+      response_code: 200
+      response_body:
+        isSuccess: true
+        errors:
+        orderId: 801MOCK
+        confirmationMessage: Done — a physical pink slip is on its way.
+        errorMessage:
+    Onlia Update Contact:
+      response_code: 200
+      response_body:
+        isSuccess: true
+        errors:
+    Onlia Find Latest Case:
+      response_code: 200
+      response_body:
+        found: true
+        caseId: 500000000000001AAA
+        caseNumber: '00001471'
+        subject: Onlia voice call
+        status: Working
+    Onlia Update Case:
+      response_code: 200
+      response_body:
+        isSuccess: true
+        errors:
+        caseId: 500000000000001AAA
+        wasUpdated: true
+    Onlia Update Or Create Case:
+      response_code: 200
+      response_body:
+        isSuccess: true
+        errors:
+        caseId: 500000000000001AAA
+        wasUpdated: false
+    Onlia Schedule Callback:
+      response_code: 200
+      response_body:
+        isSuccess: true
+        errors:
+        contactRequestId: 0RtMOCK
+        confirmationMessage: A licensed broker will call you back.
+  assertions:
+  - data_connector: Onlia Send Pink Slip Email
+    is: triggered
+  - data_connector: Onlia Find Latest Case
+    is: triggered
+  - data_connector: Onlia Update Case
+    is: triggered
+  - agent_response: Before the caller was passed to a broker, Fin updated the caller's
+      case with a summary of the call
+

@@ -1,0 +1,29 @@
+{
+  "required" : [ "contactId", "messagingSessionId", "quoteId" ],
+  "unevaluatedProperties" : false,
+  "properties" : {
+    "contactId" : {
+      "title" : "Contact ID",
+      "description" : "The Salesforce Contact ID of the customer whose open quote to display",
+      "lightning:type" : "lightning__textType",
+      "lightning:isPII" : false,
+      "copilotAction:isUserInput" : false
+    },
+    "messagingSessionId" : {
+      "title" : "Messaging Session ID",
+      "description" : "The Messaging Session ID — used to resolve the Contact when Quote ID and Contact ID are not available",
+      "lightning:type" : "lightning__textType",
+      "lightning:isPII" : false,
+      "copilotAction:isUserInput" : false
+    },
+    "quoteId" : {
+      "title" : "Quote ID",
+      "description" : "The Quote record Id to display. If blank, the contact's most recent open Quote is used.",
+      "lightning:type" : "lightning__textType",
+      "lightning:isPII" : false,
+      "copilotAction:isUserInput" : false
+    }
+  },
+  "lightning:type" : "lightning__objectType",
+  "lightning:textIndexed" : true
+}

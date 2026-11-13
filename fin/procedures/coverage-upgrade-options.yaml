@@ -1,0 +1,158 @@
+---
+id: 2209049
+positive_triggers:
+- I'd like to know about upgrading my coverage
+- Can I bundle my auto and home insurance together?
+- What coverage do you offer for personal injury on my auto policy?
+- Does my car insurance cover property damage, and can I add more?
+- What coverage increments does Onlia offer?
+- I want to add more coverage to my policy
+- Can I customize my coverage any way I want?
+- What options do I have to increase my auto coverage?
+negative_triggers:
+- I want to file a claim for an accident
+- How much is my monthly premium?
+- I need to cancel my policy
+- Can you update my mailing address?
+- I want to make a payment on my policy
+- I need a copy of my proof of insurance
+- I want to speak to someone about a billing error
+- What's the status of my claim?
+trigger_description: Caller asks general questions about upgrading or adding coverage,
+  such as bundling auto and home coverage, auto coverage for personal injury and property
+  damage, the coverage increments Onlia offers, or customizations Onlia does not allow.
+  No account or policy details are needed to ask.
+targeting:
+  channels:
+  - phone_call
+agentic_switch: false
+procedure:
+  main:
+  - 'Find out which coverage topic the caller is asking about: bundling auto and home
+    coverage, auto coverage for personal injury and property damage, the coverage
+    increments Onlia offers, or customizations Onlia does not allow. If it is not
+    clear, ask one short question to clarify. No verification is needed for general
+    coverage questions.'
+  - Answer the caller's question using only the Onlia knowledge articles available
+    to Fin. No verification is needed for general information. Speak in short conversational
+    sentences. Do not state any limit, increment, price, or eligibility that an article
+    does not explicitly provide, never quote a rate, and never promise a coverage
+    change. If no article covers the question, or no articles are available, say so
+    plainly and offer to connect the caller with a licensed Onlia broker who can help.
+    If the caller accepts, or asks for a person or a callback, use the Broker Handoff
+    steps (the final step of this procedure handles it).
+  - if: The caller asks how this applies to their own policy or their own quote AND
+      there is NO successful Onlia Verify Code result earlier in this conversation
+      (a successful result has isSuccess true, empty errors and isVerified true)
+    then:
+      run: Verify Caller
+  - If the caller has been verified in this call with a successful Onlia Verify Code
+    and asked about their own policy or quote, <use action="Onlia Find Active Policy"
+    /> using the customerId from the successful Verify Code as the contactId, and
+    use the policy type to tailor the answer to their situation. Briefly let the caller
+    know you've pulled up their policy. Never ask the caller for an ID.
+  - If the caller has been verified and their question relates to changing or adding
+    coverage and a quote could be relevant, offer to look at their latest quote. If
+    they agree, <use action="Onlia Find Quote" /> using the customerId from the successful
+    Verify Code as the contactId, and tell them only the quote number, status and
+    expiration date from the result, without adding any new rates or promises. If
+    they decline, or a quote is not relevant, move on.
+  - Close by clearly saying that this was general information, not a quote or a commitment,
+    and that only a licensed broker can make any change to their coverage. Offer to
+    connect them with a licensed Onlia broker. If the caller accepts, or asks for
+    a person or a callback, use the Broker Handoff steps (the final step of this procedure
+    handles it). If the caller declines, thank them for calling.
+  - if: The caller asks to speak to a broker, a licensed agent, a person or a human,
+      or agrees to be connected to one or to a broker callback, or asks for something
+      only a broker can do (a coverage change or upgrade, pricing, finalizing a quote,
+      billing help, or a pricing or billing exception)
+    then:
+      run: Broker Handoff
+  Verify Caller:
+  - 'Tell the caller in a short spoken sentence that you need to verify them first
+    before discussing their own policy or quote. Ask for the email address on file,
+    read it back to them naturally, and ask them to say yes to confirm it is correct.
+    Only continue once they explicitly say yes; otherwise ask for the email again.
+    Store the confirmed email: <write attr="temporary.verified_email" />.'
+  - '<use action="Onlia Send Verification Code" /> for the confirmed email <read attr="temporary.verified_email"
+    type="attribute" />. Then say: "If that email is on file, you''ll get a code shortly."
+    Never reveal whether an account exists for that email.'
+  - Ask the caller to read out the code they received, then read the digits back to
+    them and ask them to confirm they are right.
+  - <use action="Onlia Verify Code" /> with customerCode set to the code the caller
+    gave, and authenticationKey, customerId and customerType taken from the latest
+    Onlia Send Verification Code result. The caller is verified only when isSuccess
+    is true, the errors are empty, and isVerified is true.
+  - if: The latest Onlia Verify Code result does not show a verified caller, meaning
+      isVerified is not true, isSuccess is not true, or errors are not empty
+    then:
+    - Tell the caller the code didn't work and offer to send one new code. If they
+      agree, <use action="Onlia Send Verification Code" /> for the confirmed email
+      <read attr="temporary.verified_email" type="attribute" />, then say "If that
+      email is on file, you'll get a code shortly." Ask them for the new code and
+      read the digits back to them.
+    - If a new code was sent and the caller gave it, <use action="Onlia Verify Code"
+      /> with customerCode set to the new code, and authenticationKey, customerId
+      and customerType taken from the latest Onlia Send Verification Code result.
+      If the caller is still not verified, tell them you can't discuss their own policy
+      on this call, they're welcome to call back, and continue with general information
+      only.
+  Broker Handoff:
+  - if: There is NO successful Onlia Verify Code result in this conversation (a successful
+      result has isSuccess true, empty errors and isVerified true)
+    then:
+      run: Verify Caller
+  - <use action="Onlia Find Latest Case" /> with contactId set to the customerId from
+    the successful Onlia Verify Code result in this conversation. Do not mention it
+    to the caller.
+  - if: Onlia Find Latest Case found a case for the caller
+    then: '<use action="Onlia Update Case" /> with caseId set to the case found by
+      Onlia Find Latest Case, contactId set to the verified customerId, newSubject
+      set to a short subject under 50 characters describing why the caller called
+      (for example "Policy upgrade request - caller verified"), and newDescription
+      set to 3 to 5 sentences for the broker: what the caller asked for, what was
+      already done on this call (verification, policy or quote lookup, contact details
+      updated, and so on) and what they now need from the broker. Do not create a
+      new case. Do not mention it to the caller.'
+    else: '<use action="Onlia Update Or Create Case" /> with contactId set to the
+      verified customerId, newSubject set to a short subject under 50 characters describing
+      why the caller called (for example "Policy upgrade request - caller verified"),
+      and newDescription set to 3 to 5 sentences for the broker: what the caller asked
+      for, what was already done on this call (verification, policy or quote lookup,
+      contact details updated, and so on) and what they now need from the broker.
+      Do not mention it to the caller.'
+  - 'Only after the case step above has run, say ONE short line in your own words,
+    for example: "That''s not something I''m able to handle, but I''ll pass you to
+    someone on our licensed team who can help." <handoff id="handoff-1" />'
+name: Onlia - Coverage Upgrade Options
+state: live
+inline_tool_definitions:
+  handoff-1:
+    type: handoff
+    in_office_hours:
+      type: end_call
+      data:
+        handover_message: You'll be passed over to a licensed broker now.
+    out_of_office_hours:
+      type: end_call
+      data:
+        handover_message: You'll be passed over to a licensed broker now.
+temporary_attributes:
+  verified_email:
+    type: string
+    description: The email address on file that the caller confirmed, used to send
+      the verification code.
+guidance: 'This is a phone call, so everything is spoken aloud: use short, conversational
+  sentences with no lists, formatting, or URLs. Answer ONLY from Onlia knowledge articles
+  available to Fin. Never improvise or guess limits, increments, prices, or eligibility.
+  Never quote a rate or promise a coverage change. If no article covers the question,
+  or no articles exist, say so plainly and offer a licensed broker. General coverage
+  questions need no verification. Verification is only needed for questions about
+  the caller''s own policy or quote. Never ask the caller for an ID. If the caller
+  is already verified in this call, do not ask for their email or send a new code.'
+categories:
+- tone
+- routing
+voice_settings:
+  data_connector_mocks:
+version: 46535584

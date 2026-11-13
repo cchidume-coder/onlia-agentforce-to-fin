@@ -1,0 +1,7 @@
+.DS_Store
+.sf/
+.sfdx/
+*.log
+node_modules/
+# raw simulation results can contain replayed connector values
+fin/simulations/results/

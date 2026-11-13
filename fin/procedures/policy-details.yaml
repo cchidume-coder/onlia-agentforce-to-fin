@@ -1,0 +1,142 @@
+---
+id: 2209047
+positive_triggers:
+- I'd like to know my policy number
+- What kind of policy do I have with you?
+- Can you tell me what's on my active policy?
+- I need the details of my current policy
+- What type of insurance policy am I on?
+- Can you confirm my policy number for me?
+- I'm calling to check the details of my policy
+- Which policy do I currently have active?
+negative_triggers:
+- I want to file a claim for a car accident
+- I need to cancel my policy
+- Can I change my payment date?
+- I want to get a new insurance quote
+- I forgot my password for the online portal
+- How much is my monthly premium going to go up next year?
+- I want to speak to someone about a complaint
+- Can you send me a copy of my invoice?
+trigger_description: The caller asks about their active insurance policy, such as
+  their policy number, policy type, or the mailing address on the policy.
+targeting:
+  channels:
+  - phone_call
+agentic_switch: true
+procedure:
+  main:
+  - if: There is NO successful Onlia Verify Code result earlier in this conversation
+      (a successful result has isSuccess true, empty errors and isVerified true)
+    then:
+      run: Verify Caller
+  - <use action="Onlia Find Active Policy" /> using the contactId, which is the customerId
+    from the successful "Onlia Verify Code" result.
+  - If the policy lookup returned isSuccess false or a non-empty errors value, or
+    no active policy was found, tell the caller clearly that no active policy was
+    found on their record and offer to connect them with a licensed broker who can
+    help further. Otherwise, tell the caller their policy type and their policy number,
+    using only the values returned by the policy lookup. Spell the policy number back
+    slowly, one character at a time, so the caller can confirm it. Never invent or
+    guess policy numbers, coverage terms, limits, dates or addresses.
+  - If an active policy was found, ask the caller if there is anything else they would
+    like to know about their policy. Only if the caller asks for the mailing address,
+    read the mailing address from the policy lookup back slowly in short chunks, and
+    offer to repeat it. Use only the address returned by the lookup and never invent
+    any details. If the caller asks about anything the lookup did not return, tell
+    them you don't have that information and offer a licensed broker.
+  - if: The caller asks to speak to a broker, a licensed agent, a person or a human,
+      or agrees to be connected to one or to a broker callback, or asks for something
+      only a broker can do (a coverage change or upgrade, pricing, finalizing a quote,
+      billing help, or a pricing or billing exception)
+    then:
+      run: Broker Handoff
+  Verify Caller:
+  - Tell the caller in a short spoken sentence that you need to verify their identity
+    first. Ask for the email address on file. Read it back naturally and ask them
+    to confirm. Accept only an explicit yes as confirmation; otherwise ask for the
+    email again and repeat it back. Once confirmed, store it as <write attr="temporary.verified_email"
+    />.
+  - '<use action="Onlia Send Verification Code" /> with the confirmed email <read
+    attr="temporary.verified_email" type="attribute" />, then say: "If that email
+    is on file, you''ll get a code shortly." Never reveal whether an account exists.
+    Keep authenticationKey, customerId and customerType internally and never read
+    them out.'
+  - Ask the caller for the code they received. Read the digits back to confirm them.
+    Then <use action="Onlia Verify Code" /> with customerCode as the code the caller
+    gave, and authenticationKey, customerId and customerType taken from the latest
+    Onlia Send Verification Code result. The caller is verified only when isSuccess
+    is true, errors is empty and isVerified is true.
+  - if: The caller is NOT verified, meaning the latest Onlia Verify Code result did
+      not have isSuccess true, empty errors and isVerified true
+    then:
+    - 'Tell the caller the code did not match and offer to send one new code to the
+      same email. If they agree, <use action="Onlia Send Verification Code" /> with
+      <read attr="temporary.verified_email" type="attribute" /> again, and say: "If
+      that email is on file, you''ll get a code shortly."'
+    - If a new code was sent, ask the caller for the code, read the digits back, then
+      <use action="Onlia Verify Code" /> with customerCode as the code the caller
+      gave, and authenticationKey, customerId and customerType taken from the latest
+      Onlia Send Verification Code result.
+  - if: The caller is still NOT verified, meaning the latest Onlia Verify Code result
+      did not have isSuccess true, empty errors and isVerified true, or the caller
+      declined a new code
+    then: Tell the caller you can't share account details on this call, that they're
+      welcome to call back any time, and thank them. <end behavior="end_phone_call"
+      />
+  Broker Handoff:
+  - if: There is NO successful Onlia Verify Code result in this conversation (a successful
+      result has isSuccess true, empty errors and isVerified true)
+    then:
+      run: Verify Caller
+  - <use action="Onlia Find Latest Case" /> with contactId set to the customerId from
+    the successful Onlia Verify Code result in this conversation. Do not mention it
+    to the caller.
+  - if: Onlia Find Latest Case found a case for the caller
+    then: '<use action="Onlia Update Case" /> with caseId set to the case found by
+      Onlia Find Latest Case, contactId set to the verified customerId, newSubject
+      set to a short subject under 50 characters describing why the caller called
+      (for example "Policy upgrade request - caller verified"), and newDescription
+      set to 3 to 5 sentences for the broker: what the caller asked for, what was
+      already done on this call (verification, policy or quote lookup, contact details
+      updated, and so on) and what they now need from the broker. Do not create a
+      new case. Do not mention it to the caller.'
+    else: '<use action="Onlia Update Or Create Case" /> with contactId set to the
+      verified customerId, newSubject set to a short subject under 50 characters describing
+      why the caller called (for example "Policy upgrade request - caller verified"),
+      and newDescription set to 3 to 5 sentences for the broker: what the caller asked
+      for, what was already done on this call (verification, policy or quote lookup,
+      contact details updated, and so on) and what they now need from the broker.
+      Do not mention it to the caller.'
+  - 'Only after the case step above has run, say ONE short line in your own words,
+    for example: "That''s not something I''m able to handle, but I''ll pass you to
+    someone on our licensed team who can help." <handoff id="handoff-1" />'
+name: Onlia - Policy Details
+state: live
+inline_tool_definitions:
+  handoff-1:
+    type: handoff
+    in_office_hours:
+      type: end_call
+      data:
+        handover_message: You'll be passed over to a licensed broker now.
+    out_of_office_hours:
+      type: end_call
+      data:
+        handover_message: You'll be passed over to a licensed broker now.
+temporary_attributes:
+  verified_email:
+    type: string
+    description: The email address on file that the caller confirmed, used to send
+      the verification code.
+guidance: 'This is a voice procedure: speak in short, natural spoken sentences with
+  no formatting. Only ever use information returned by the policy lookup; never invent
+  policy numbers, coverage terms, limits, dates or addresses. Never ask the caller
+  for an ID. Only share the mailing address if the caller asks for it. If the caller
+  is already verified in this call, do not ask for their email or send a new code.'
+categories:
+- tone
+- routing
+voice_settings:
+  data_connector_mocks:
+version: 46535577

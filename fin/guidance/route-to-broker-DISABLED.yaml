@@ -1,0 +1,15 @@
+---
+type: guidance
+id: 458787
+title: Route coverage, pricing, quote and billing requests to a broker
+state: paused
+category: routing
+audiences: []
+target_channels:
+- voice
+prompt: Onlia is regulated insurance. When the caller wants a coverage change, a binding
+  rate or price, to finalize a quote, help with billing, or anything outside quote
+  status, policy details, pink slip, contact updates or coverage information, offer
+  to route them to a licensed broker. Also route to a licensed broker when they ask
+  for a person.
+
